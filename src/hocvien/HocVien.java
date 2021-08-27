@@ -15,6 +15,8 @@ import java.util.List;
 import java.util.Scanner;
 import java.io.File;
 import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 public class HocVien {
 
@@ -33,11 +35,24 @@ public class HocVien {
             while(input.hasNextLine()){
                 String line;
                 line = input.nextLine();
+                
+                if(line.length() <= 0)
+                    continue;
+                
                 empMaHocVien = line.substring(0,10);
                 empTenHocVien = line.substring(10,60).trim();
-                empNgaySinh = Date.valueOf(line.substring(60,70));
                 empGioiTinh = line.substring(70,73).trim();
                 empDiemThi = Float.parseFloat(line.substring(73,76));
+                
+                Date empDate = null;
+                try{
+                    empDate = new SimpleDateFormat("dd/mm/yyyy").parse(line.substring(60,70));
+                }catch(Exception e){
+                    System.out.println(e);
+                }
+                empNgaySinh = empDate;
+                
+                writeData();
             }
         }catch(IOException e){
             System.out.println(e);
@@ -45,21 +60,19 @@ public class HocVien {
     }
     
     public static void writeData(){
-        readData();
-        
         try (Connection conn = getJDBCConnection();
             PreparedStatement pstat = conn.prepareStatement("insert into HOCVIEN values (?, ?, ?, ?, ?)")){
             
+            java.sql.Date sqlNgaySinh = new java.sql.Date(empNgaySinh.getTime());
+            
             pstat.setString(1, empMaHocVien);
             pstat.setString(2, empTenHocVien);
-            pstat.setDate(3, empNgaySinh);
+            pstat.setDate(3, sqlNgaySinh);
             pstat.setString(4, empGioiTinh);
             pstat.setFloat(5, empDiemThi);
-            
-            System.out.println(empMaHocVien + empTenHocVien + empNgaySinh + empGioiTinh + empDiemThi);
-            
+//            
             pstat.executeUpdate();
-        }catch(Exception e) {
+        }catch(SQLException e) {
             System.out.println(e);
         }
     }
@@ -106,12 +119,17 @@ public class HocVien {
     
     public static void main(String[] args) {
         Connection conn = null;
+        HocVien hv = new HocVien();
+        
+        try{
+            hv.readData();
+        }catch(Exception e){
+            System.out.println(e);
+        }
         
         try {
             conn = getJDBCConnection();
             Statement stmt = conn.createStatement();
-            
-            writeData();
             
             String sql="select * from HOCVIEN";
             ResultSet rs = stmt.executeQuery(sql);
@@ -123,10 +141,10 @@ public class HocVien {
                 String GioiTinh = rs.getString("GioiTinh");
                 Float DiemThi = rs.getFloat("DiemThi");
                 System.out.print("MaHocVien=" + MaHocVien + 
-                        " TenHocVien=" + TenHocVien + 
-                        " NgaySinh=" + NgaySinh + 
-                        " GioiTinh=" + GioiTinh + 
-                        " DiemThi=" + DiemThi);
+                        "\tTenHocVien=" + TenHocVien + 
+                        "\tNgaySinh=" + NgaySinh + 
+                        "\tGioiTinh=" + GioiTinh + 
+                        "\tDiemThi=" + DiemThi);
                 System.out.println("\n");
             }
             
